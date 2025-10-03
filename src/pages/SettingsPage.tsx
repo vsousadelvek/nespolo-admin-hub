@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { Settings } from "lucide-react";
 
@@ -79,9 +80,16 @@ const SettingsPage = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           {isLoading ? (
-            <div className="text-muted-foreground animate-pulse flex items-center gap-2">
-              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              Carregando...
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-10 w-full" />
             </div>
           ) : (
             <>

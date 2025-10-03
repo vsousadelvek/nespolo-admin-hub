@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, MessageCircle } from "lucide-react";
+import { SkeletonChat } from "@/components/SkeletonCard";
+import { EmptyState } from "@/components/EmptyState";
 
 interface Message {
   id: number;
@@ -15,7 +17,7 @@ interface Message {
 const Conversations = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  const { data: userIds } = useQuery({
+  const { data: userIds, isLoading: usersLoading } = useQuery({
     queryKey: ["conversations"],
     queryFn: async (): Promise<string[]> => {
       const response = await fetch("/conversations");
@@ -23,7 +25,7 @@ const Conversations = () => {
     },
   });
 
-  const { data: messages } = useQuery({
+  const { data: messages, isLoading: messagesLoading } = useQuery({
     queryKey: ["conversation", selectedUserId],
     queryFn: async (): Promise<Message[]> => {
       if (!selectedUserId) return [];
@@ -54,20 +56,36 @@ const Conversations = () => {
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[600px]">
-              {userIds?.map((userId, index) => (
-                <button
-                  key={userId}
-                  onClick={() => setSelectedUserId(userId)}
-                  className={`w-full px-4 py-3 text-left transition-all duration-200 hover:bg-accent animate-fade-in ${
-                    selectedUserId === userId
-                      ? "bg-accent text-accent-foreground border-l-2 border-primary"
-                      : ""
-                  }`}
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  {userId}
-                </button>
-              ))}
+              {usersLoading ? (
+                <div className="p-4 space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+                  ))}
+                </div>
+              ) : !userIds || userIds.length === 0 ? (
+                <div className="p-4">
+                  <EmptyState
+                    icon={MessageCircle}
+                    title="Sem conversas"
+                    description="Nenhuma conversa registrada ainda"
+                  />
+                </div>
+              ) : (
+                userIds.map((userId, index) => (
+                  <button
+                    key={userId}
+                    onClick={() => setSelectedUserId(userId)}
+                    className={`w-full px-4 py-3 text-left transition-all duration-200 hover:bg-accent animate-fade-in ${
+                      selectedUserId === userId
+                        ? "bg-accent text-accent-foreground border-l-2 border-primary"
+                        : ""
+                    }`}
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                  >
+                    {userId}
+                  </button>
+                ))
+              )}
             </ScrollArea>
           </CardContent>
         </Card>
@@ -80,7 +98,22 @@ const Conversations = () => {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[600px] pr-4">
-              {messages?.map((message, index) => (
+              {!selectedUserId ? (
+                <EmptyState
+                  icon={MessageSquare}
+                  title="Selecione uma conversa"
+                  description="Escolha um usuário da lista para ver o histórico"
+                />
+              ) : messagesLoading ? (
+                <SkeletonChat />
+              ) : !messages || messages.length === 0 ? (
+                <EmptyState
+                  icon={MessageCircle}
+                  title="Sem mensagens"
+                  description="Esta conversa ainda não tem mensagens"
+                />
+              ) : (
+                messages.map((message, index) => (
                 <div
                   key={message.id}
                   className={`mb-4 flex animate-fade-in ${
@@ -112,7 +145,8 @@ const Conversations = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </ScrollArea>
           </CardContent>
         </Card>

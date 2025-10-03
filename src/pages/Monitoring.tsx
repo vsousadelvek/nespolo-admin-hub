@@ -3,9 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusIndicator } from "@/components/StatusIndicator";
-import { MetricCard } from "@/components/MetricCard";
+import { MetricChartCard } from "@/components/MetricChartCard";
+import { SkeletonCard } from "@/components/SkeletonCard";
 import { toast } from "@/hooks/use-toast";
-import { Activity, Users, Zap, Wrench } from "lucide-react";
+import { Activity, Users, Zap, Wrench, RefreshCw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface HealthStatus {
   application: "healthy" | "unhealthy";
@@ -31,9 +39,17 @@ const parseMetrics = (metricsText: string) => {
 
 const Monitoring = () => {
   const [isRunning, setIsRunning] = useState(false);
+  const [period, setPeriod] = useState("24h");
+
+  // Mock data generator for charts
+  const generateChartData = (baseValue: number) => {
+    return Array.from({ length: 12 }, (_, i) => ({
+      value: Math.floor(baseValue * (0.8 + Math.random() * 0.4)),
+    }));
+  };
 
   // Health check query - polls every 15 seconds
-  const { data: healthData } = useQuery({
+  const { data: healthData, refetch: refetchHealth } = useQuery({
     queryKey: ["health"],
     queryFn: async (): Promise<HealthStatus> => {
       const response = await fetch("/healthz");
@@ -43,7 +59,7 @@ const Monitoring = () => {
   });
 
   // Metrics query - polls every 30 seconds
-  const { data: metricsText } = useQuery({
+  const { data: metricsText, isLoading: metricsLoading, refetch: refetchMetrics } = useQuery({
     queryKey: ["metrics"],
     queryFn: async () => {
       const response = await fetch("/metrics");
@@ -51,6 +67,15 @@ const Monitoring = () => {
     },
     refetchInterval: 30000,
   });
+
+  const handleRefresh = () => {
+    refetchHealth();
+    refetchMetrics();
+    toast({
+      title: "Atualizado",
+      description: "Dados recarregados com sucesso",
+    });
+  };
 
   const metrics = metricsText ? parseMetrics(metricsText) : {};
 
@@ -77,13 +102,35 @@ const Monitoring = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="animate-slide-in-left">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-          Monitoramento
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Status dos serviços e métricas em tempo real
-        </p>
+      <div className="flex items-center justify-between animate-slide-in-left">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            Monitoramento
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Status dos serviços e métricas em tempo real
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="24h">Últimas 24h</SelectItem>
+              <SelectItem value="7d">Últimos 7 dias</SelectItem>
+              <SelectItem value="30d">Últimos 30 dias</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            className="hover-lift"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -135,28 +182,45 @@ const Monitoring = () => {
 
       <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
         <h2 className="text-xl font-semibold mb-4">Métricas da Aplicação</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            title="Total de Mensagens Recebidas"
-            value={metrics.whatsapp_messages_received_total || 0}
-            icon={<Activity className="h-4 w-4" />}
-          />
-          <MetricCard
-            title="Tarefas de Prospecção Disparadas"
-            value={metrics.prospecting_tasks_dispatched_total || 0}
-            icon={<Zap className="h-4 w-4" />}
-          />
-          <MetricCard
-            title="Total de Leads Salvos"
-            value={metrics.prospecting_leads_saved_total || 0}
-            icon={<Users className="h-4 w-4" />}
-          />
-          <MetricCard
-            title="Acionamentos de Ferramentas"
-            value={metrics.agent_tool_calls_total || 0}
-            icon={<Wrench className="h-4 w-4" />}
-          />
-        </div>
+        {metricsLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <MetricChartCard
+              title="Total de Mensagens Recebidas"
+              value={metrics.whatsapp_messages_received_total || 0}
+              icon={<Activity className="h-4 w-4" />}
+              data={generateChartData(metrics.whatsapp_messages_received_total || 0)}
+              trend={12}
+            />
+            <MetricChartCard
+              title="Tarefas de Prospecção Disparadas"
+              value={metrics.prospecting_tasks_dispatched_total || 0}
+              icon={<Zap className="h-4 w-4" />}
+              data={generateChartData(metrics.prospecting_tasks_dispatched_total || 0)}
+              trend={8}
+            />
+            <MetricChartCard
+              title="Total de Leads Salvos"
+              value={metrics.prospecting_leads_saved_total || 0}
+              icon={<Users className="h-4 w-4" />}
+              data={generateChartData(metrics.prospecting_leads_saved_total || 0)}
+              trend={-5}
+            />
+            <MetricChartCard
+              title="Acionamentos de Ferramentas"
+              value={metrics.agent_tool_calls_total || 0}
+              icon={<Wrench className="h-4 w-4" />}
+              data={generateChartData(metrics.agent_tool_calls_total || 0)}
+              trend={15}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
