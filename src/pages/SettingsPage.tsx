@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { Settings } from "lucide-react";
 
 interface AgentConfig {
   system_prompt: string;
@@ -59,21 +60,29 @@ const SettingsPage = () => {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Configurações</h1>
+    <div className="space-y-6 animate-fade-in">
+      <div className="animate-slide-in-left">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+          Configurações
+        </h1>
         <p className="text-muted-foreground mt-1">
           Ajuste o comportamento do agente de IA
         </p>
       </div>
 
-      <Card>
+      <Card className="hover-lift animate-scale-in">
         <CardHeader>
-          <CardTitle>Configurações do Agente</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5 text-primary" />
+            Configurações do Agente
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {isLoading ? (
-            <div className="text-muted-foreground">Carregando...</div>
+            <div className="text-muted-foreground animate-pulse flex items-center gap-2">
+              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              Carregando...
+            </div>
           ) : (
             <>
               <div className="space-y-2">
@@ -82,7 +91,7 @@ const SettingsPage = () => {
                   id="system-prompt"
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
-                  className="min-h-[200px] font-mono text-sm"
+                  className="min-h-[200px] font-mono text-sm transition-all duration-300 focus:ring-2 focus:ring-primary"
                   placeholder="Digite o prompt do sistema..."
                 />
               </div>
@@ -94,15 +103,23 @@ const SettingsPage = () => {
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
                   placeholder="transportadora, empresa de logística, ..."
+                  className="transition-all duration-300 focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               <Button
                 onClick={() => saveMutation.mutate()}
                 disabled={saveMutation.isPending}
-                className="w-full"
+                className="w-full transition-all duration-300 hover:shadow-lg hover:scale-105"
               >
-                {saveMutation.isPending ? "Salvando..." : "Salvar Configurações"}
+                {saveMutation.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Salvando...
+                  </span>
+                ) : (
+                  "Salvar Configurações"
+                )}
               </Button>
             </>
           )}

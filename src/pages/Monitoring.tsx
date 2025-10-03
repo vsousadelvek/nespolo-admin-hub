@@ -76,18 +76,23 @@ const Monitoring = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Monitoramento</h1>
+    <div className="space-y-6 animate-fade-in">
+      <div className="animate-slide-in-left">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+          Monitoramento
+        </h1>
         <p className="text-muted-foreground mt-1">
           Status dos serviços e métricas em tempo real
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card className="hover-lift animate-scale-in transition-all duration-300">
           <CardHeader>
-            <CardTitle>Status dos Serviços</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Status dos Serviços
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {healthData ? (
@@ -97,28 +102,38 @@ const Monitoring = () => {
                 <StatusIndicator status={healthData.redis} label="Redis (Broker)" />
               </>
             ) : (
-              <div className="text-muted-foreground">Carregando...</div>
+              <div className="text-muted-foreground animate-pulse">Carregando...</div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-scale-in transition-all duration-300" style={{ animationDelay: "0.1s" }}>
           <CardHeader>
-            <CardTitle>Controle do Pipeline de Prospecção</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary" />
+              Controle do Pipeline de Prospecção
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Button
               onClick={handleRunProspecting}
               disabled={isRunning}
-              className="w-full"
+              className="w-full transition-all duration-300 hover:shadow-lg hover:scale-105"
             >
-              {isRunning ? "Executando..." : "Executar Prospecção Agora"}
+              {isRunning ? (
+                <span className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Executando...
+                </span>
+              ) : (
+                "Executar Prospecção Agora"
+              )}
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      <div>
+      <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
         <h2 className="text-xl font-semibold mb-4">Métricas da Aplicação</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
