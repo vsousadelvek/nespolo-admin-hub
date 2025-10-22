@@ -1,4 +1,4 @@
-import { Activity, Users, MessageSquare, Settings } from "lucide-react";
+import { Activity, Users, MessageSquare, Settings, Send } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -16,6 +16,7 @@ const menuItems = [
   { title: "Monitoramento", url: "/", icon: Activity },
   { title: "Leads Qualificados", url: "/leads", icon: Users },
   { title: "Histórico de Conversas", url: "/conversations", icon: MessageSquare },
+  { title: "Teste de Mensagens", url: "/test", icon: Send },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
 

@@ -21,19 +21,30 @@ const Conversations = () => {
     queryKey: ["conversations"],
     queryFn: async (): Promise<string[]> => {
       const response = await fetch("/conversations");
-      return response.json();
+      if (!response.ok) {
+        throw new Error(`Erro ao carregar conversas: ${response.status}`);
+      }
+      const data = await response.json();
+      // Backend retorna { user_ids: [...] }
+      return data.user_ids || [];
     },
   });
 
-  const { data: messages, isLoading: messagesLoading } = useQuery({
+  const { data: conversationData, isLoading: messagesLoading } = useQuery({
     queryKey: ["conversation", selectedUserId],
-    queryFn: async (): Promise<Message[]> => {
-      if (!selectedUserId) return [];
+    queryFn: async (): Promise<{ user_id: string; messages: Message[] }> => {
+      if (!selectedUserId) return { user_id: "", messages: [] };
       const response = await fetch(`/conversations/${selectedUserId}`);
+      if (!response.ok) {
+        throw new Error(`Erro ao carregar mensagens: ${response.status}`);
+      }
       return response.json();
     },
     enabled: !!selectedUserId,
   });
+
+  // Extrair apenas as mensagens
+  const messages = conversationData?.messages || [];
 
   return (
     <div className="space-y-6 animate-fade-in">

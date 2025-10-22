@@ -6,7 +6,8 @@ import { StatusIndicator } from "@/components/StatusIndicator";
 import { MetricChartCard } from "@/components/MetricChartCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { toast } from "@/hooks/use-toast";
-import { Activity, Users, Zap, Wrench, RefreshCw } from "lucide-react";
+import { Activity, Users, Zap, Wrench, RefreshCw, AlertCircle, MessageSquare } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -19,6 +20,24 @@ interface HealthStatus {
   application: "healthy" | "unhealthy";
   database: "healthy" | "unhealthy";
   redis: "healthy" | "unhealthy";
+}
+
+interface DailyLimitsStatus {
+  leads: {
+    current: number;
+    limit: number;
+    remaining: number;
+    percentage: number;
+    resets_in_seconds?: number;
+  };
+  messages: {
+    current: number;
+    limit: number;
+    remaining: number;
+    percentage: number;
+    resets_in_seconds?: number;
+  };
+  redis_available: boolean;
 }
 
 const parseMetrics = (metricsText: string) => {
@@ -68,9 +87,20 @@ const Monitoring = () => {
     refetchInterval: 30000,
   });
 
+  // Daily limits query - polls every 30 seconds
+  const { data: dailyLimits, isLoading: limitsLoading, refetch: refetchLimits } = useQuery({
+    queryKey: ["daily-limits"],
+    queryFn: async (): Promise<{ status: string; data: DailyLimitsStatus }> => {
+      const response = await fetch("/daily-limits");
+      return response.json();
+    },
+    refetchInterval: 30000,
+  });
+
   const handleRefresh = () => {
     refetchHealth();
     refetchMetrics();
+    refetchLimits();
     toast({
       title: "Atualizado",
       description: "Dados recarregados com sucesso",
@@ -133,7 +163,7 @@ const Monitoring = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card className="hover-lift animate-scale-in transition-all duration-300">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -176,6 +206,69 @@ const Monitoring = () => {
                 "Executar Prospecção Agora"
               )}
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-lift animate-scale-in transition-all duration-300" style={{ animationDelay: "0.2s" }}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-primary" />
+              Créditos Disponíveis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {limitsLoading ? (
+              <div className="text-muted-foreground animate-pulse">Carregando...</div>
+            ) : dailyLimits?.data ? (
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Leads
+                    </span>
+                    <span className={`text-2xl font-bold ${dailyLimits.data.leads.remaining < 20 ? 'text-amber-500' : 'text-primary'}`}>
+                      {dailyLimits.data.leads.remaining}
+                    </span>
+                  </div>
+                  <Progress
+                    value={100 - dailyLimits.data.leads.percentage}
+                    className="h-2"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {dailyLimits.data.leads.current} usados de {dailyLimits.data.leads.limit}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Mensagens
+                    </span>
+                    <span className={`text-2xl font-bold ${dailyLimits.data.messages.remaining < 30 ? 'text-amber-500' : 'text-primary'}`}>
+                      {dailyLimits.data.messages.remaining}
+                    </span>
+                  </div>
+                  <Progress
+                    value={100 - dailyLimits.data.messages.percentage}
+                    className="h-2"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {dailyLimits.data.messages.current} usadas de {dailyLimits.data.messages.limit}
+                  </p>
+                </div>
+
+                {!dailyLimits.data.redis_available && (
+                  <div className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Redis indisponível
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">Dados não disponíveis</div>
+            )}
           </CardContent>
         </Card>
       </div>

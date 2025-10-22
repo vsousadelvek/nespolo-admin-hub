@@ -1,64 +1,25 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import GeneralSettings from "./GeneralSettings";
+import IntegrationsSettings from "./IntegrationsSettings";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/hooks/use-toast";
-import { Settings } from "lucide-react";
 
-interface AgentConfig {
-  system_prompt: string;
-  prospecting_keywords: string;
-}
+type SettingsTab = "general" | "integrations" | "appearance";
 
 const SettingsPage = () => {
-  const queryClient = useQueryClient();
-  const [systemPrompt, setSystemPrompt] = useState("");
-  const [keywords, setKeywords] = useState("");
+  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
-  const { isLoading } = useQuery({
-    queryKey: ["agent-config"],
-    queryFn: async (): Promise<AgentConfig> => {
-      const response = await fetch("/agent-config");
-      const data = await response.json();
-      setSystemPrompt(data.system_prompt);
-      setKeywords(data.prospecting_keywords);
-      return data;
-    },
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/agent-config", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          system_prompt: systemPrompt,
-          prospecting_keywords: keywords,
-        }),
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["agent-config"] });
-      toast({
-        title: "Sucesso",
-        description: "Configurações salvas com sucesso!",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Erro",
-        description: "Falha ao salvar configurações",
-        variant: "destructive",
-      });
-    },
-  });
+  const renderContent = () => {
+    switch (activeTab) {
+      case "general":
+        return <GeneralSettings />;
+      case "integrations":
+        return <IntegrationsSettings />;
+      case "appearance":
+        return <div>Em breve...</div>; // Placeholder
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -67,72 +28,43 @@ const SettingsPage = () => {
           Configurações
         </h1>
         <p className="text-muted-foreground mt-1">
-          Ajuste o comportamento do agente de IA
+          Ajuste o comportamento do agente de IA e da aplicação
         </p>
       </div>
 
-      <Card className="hover-lift animate-scale-in">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-primary" />
-            Configurações do Agente
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {isLoading ? (
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-32 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="system-prompt">Prompt do Sistema do Agente</Label>
-                <Textarea
-                  id="system-prompt"
-                  value={systemPrompt}
-                  onChange={(e) => setSystemPrompt(e.target.value)}
-                  className="min-h-[200px] font-mono text-sm transition-all duration-300 focus:ring-2 focus:ring-primary"
-                  placeholder="Digite o prompt do sistema..."
-                />
-              </div>
+      <div className="flex space-x-4 border-b">
+        <Button
+          variant={activeTab === "general" ? "ghost" : "ghost"}
+          className={`rounded-none ${
+            activeTab === "general"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground"
+          }`}
+          onClick={() => setActiveTab("general")}
+        >
+          Geral
+        </Button>
+        <Button
+          variant={activeTab === "integrations" ? "ghost" : "ghost"}
+          className={`rounded-none ${
+            activeTab === "integrations"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground"
+          }`}
+          onClick={() => setActiveTab("integrations")}
+        >
+          Integrações
+        </Button>
+        <Button
+          variant="ghost"
+          className="rounded-none text-muted-foreground"
+          disabled
+        >
+          Aparência
+        </Button>
+      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="keywords">Palavras-chave de Prospecção</Label>
-                <Input
-                  id="keywords"
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  placeholder="transportadora, empresa de logística, ..."
-                  className="transition-all duration-300 focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              <Button
-                onClick={() => saveMutation.mutate()}
-                disabled={saveMutation.isPending}
-                className="w-full transition-all duration-300 hover:shadow-lg hover:scale-105"
-              >
-                {saveMutation.isPending ? (
-                  <span className="flex items-center gap-2">
-                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Salvando...
-                  </span>
-                ) : (
-                  "Salvar Configurações"
-                )}
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+      <div className="mt-6">{renderContent()}</div>
     </div>
   );
 };
